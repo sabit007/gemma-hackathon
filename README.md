@@ -1,4 +1,4 @@
-# ShohojHishab
+# ShohojHishab - সহজ হিসাব
 
 **Voice-first bookkeeping for local shop owners, powered by Gemma 4.**
 
