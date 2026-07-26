@@ -274,13 +274,13 @@ export default function VoiceInputPad() {
         {/* Text review / manual entry box with Accept button */}
         <form onSubmit={handleSubmitTransaction} className="flex flex-col gap-2 mt-1">
           <div className="flex gap-2">
-            <input
-              type="text"
+            <textarea
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               disabled={isProcessing || isRecording}
               placeholder={t("textPlaceholder")}
-              className="flex-1 min-w-0 border-4 border-black px-3 py-2 bg-white text-black font-semibold text-sm rounded-none focus:outline-none focus:bg-gray-100 placeholder-gray-500"
+              rows={3}
+              className="flex-1 min-w-0 border-4 border-black px-3 py-2 bg-white text-black font-semibold text-sm rounded-none focus:outline-none focus:bg-gray-100 placeholder-gray-500 resize-none"
             />
             {inputText.trim() && (
               <button
