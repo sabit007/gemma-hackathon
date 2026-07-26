@@ -1,8 +1,8 @@
-# KothaKhata
+# ShohojHishab
 
 **Voice-first bookkeeping for local shop owners, powered by Gemma.**
 
-KothaKhata (কথা খাতা — "spoken ledger") lets small shop owners (*mudi dokan* / *dokandar*) log daily sales and customer credit (*baki*) simply by speaking, in Bangla, the way they already talk to their customers — no typing, no forms, no app literacy required.
+ShohojHishab (সহজ হিসাব — "easy accounting") lets small shop owners (*mudi dokan* / *dokandar*) log daily sales and customer credit (*baki*) simply by speaking, in Bangla, the way they already talk to their customers — no typing, no forms, no app literacy required.
 
 Built for **Build With Gemma @ Bangladesh** — Track 6: Native Audio & Voice.
 
@@ -29,7 +29,7 @@ Most neighborhood shops in Bangladesh run their ledgers on paper — sales, and 
 - Digital POS tools assume typing, English, and a level of digital literacy many shop owners don't have or want to use
 - Existing apps rarely fit how these shops actually operate: fast, conversational, trust-based transactions
 
-KothaKhata's premise: the shopkeeper shouldn't have to change how they work. The app should listen.
+ShohojHishab's premise: the shopkeeper shouldn't have to change how they work. The app should listen.
 
 ## Solution
 
