@@ -468,9 +468,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         alert(t("addTxSuccess"));
       }
     } catch (err) {
-      console.warn("API Server down. Unable to save external data to backend.", err);
-      // Fallback: just add to local state
-      addTransaction(parsedData);
+      console.warn("API Server down or invalid data. Using local parser.", err);
+      // Fallback: use local parser on the original text
+      const localData = parseLedgerTextLocal(parsedData.rawTranscript || parsedData.transcript || parsedData.text || "");
+      addTransaction(localData);
       alert(t("addTxSuccess"));
     } finally {
       setIsProcessing(false);

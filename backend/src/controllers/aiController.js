@@ -313,12 +313,17 @@ const saveExternalParsedData = async (req, res) => {
         });
       }
 
+      const phoneToSave = finalPhone === "NONE" ? null : finalPhone;
       customer = await Customer.create({
         name: customerName,
         normalizedName,
-        phone: finalPhone,
+        phone: phoneToSave,
         outstandingBaki: 0
       });
+    }
+
+    if (!items || !Array.isArray(items)) {
+      return res.status(400).json({ message: "Invalid parsed data from external API (no items found)." });
     }
 
     const preparedItems = items.map((item) => {
