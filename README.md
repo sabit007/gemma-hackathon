@@ -1,5 +1,4 @@
-﻿# gemma-hackathon
-# KothaKhata
+﻿# KothaKhata
 
 **Voice-first bookkeeping for local shop owners, powered by Gemma.**
 
@@ -68,7 +67,7 @@ Express backend
         ├─► Gemma (via Gemini API) ──► structured JSON
         │       { customer_name, phone?, items[], payment_status, amount_paid }
         │
-        ├─► SQLite ──► match/create customer → create order → update ledger
+        ├─► NoSQL ──► match/create customer → create order → update ledger
         │
         └─► Response ──► bill summary + confirmation shown in browser
 ```
@@ -80,7 +79,7 @@ If transcription fails or is low-confidence, the frontend falls back to a plain 
 | Layer | Choice |
 |---|---|
 | Backend | Node.js + Express |
-| Database | SQLite |
+| Database | NoSQL |
 | AI Model | Gemma (via Gemini API) |
 | Speech-to-Text | Bangla ASR (transcription step ahead of Gemma prompt) |
 | Frontend | HTML/CSS/JS, mobile-first responsive |
