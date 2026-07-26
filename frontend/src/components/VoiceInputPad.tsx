@@ -226,88 +226,87 @@ export default function VoiceInputPad() {
   };
 
   return (
-    <div className="fixed bottom-4 left-0 right-0 w-[calc(100%-2rem)] max-w-lg mx-auto z-40 bg-white border-4 border-black p-4 shadow-brutal pt-12">
-      <div className="flex flex-col gap-3">
-        {/* Floating Action control row */}
-        <div className="flex items-center justify-center relative h-10">
-          <div className="absolute -top-16 flex items-center justify-center">
-            {/* Pulsing Ripple Rings when Recording */}
-            {isRecording && (
-              <>
-                <div className="absolute w-32 h-32 rounded-full border-4 border-black animate-ping opacity-25" />
-                <div className="absolute w-28 h-28 rounded-full border-4 border-black animate-ping opacity-45 delay-100" />
-              </>
-            )}
-
-            {/* Big Mic Button */}
+    <div className="fixed bottom-4 left-0 right-0 w-[calc(100%-2rem)] max-w-lg mx-auto z-40 bg-white border-4 border-black p-4 shadow-brutal flex flex-col gap-4">
+      
+      {/* Text review / manual entry box with Accept button (MOVED TO TOP) */}
+      <form onSubmit={handleSubmitTransaction} className="flex flex-col gap-2">
+        <div className="flex gap-2">
+          <textarea
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            disabled={isProcessing || isRecording}
+            placeholder={t("textPlaceholder")}
+            rows={3}
+            className="flex-1 min-w-0 border-4 border-black px-3 py-2 bg-white text-black font-semibold text-sm rounded-none focus:outline-none focus:bg-gray-100 placeholder-gray-500 resize-none"
+          />
+          {inputText.trim() && (
             <button
-              onClick={handleMicToggle}
-              disabled={isProcessing}
-              className={`z-10 rounded-full p-8 border-4 border-black transition-all active:scale-95 cursor-pointer shadow-brutal select-none ${
-                isRecording
-                  ? "bg-white text-black hover:bg-black hover:text-white"
-                  : "bg-black text-white hover:bg-white hover:text-black"
-              }`}
-            >
-              {isRecording ? (
-                <MicOff className="w-10 h-10 stroke-[2.5]" />
-              ) : (
-                <Mic className="w-10 h-10 stroke-[2.5]" />
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Helper Mic status banner */}
-        <div className="text-center mt-2">
-          <p className="text-xs font-bold uppercase tracking-wider text-black select-none">
-            {isRecording ? (
-              <span className="text-red-600 animate-pulse flex items-center justify-center gap-1.5">
-                ● শুনছি... কথা বলা শেষ হলে বোতামে আবার চাপুন
-              </span>
-            ) : (
-              t("speakHint")
-            )}
-          </p>
-        </div>
-
-        {/* Text review / manual entry box with Accept button */}
-        <form onSubmit={handleSubmitTransaction} className="flex flex-col gap-2 mt-1">
-          <div className="flex gap-2">
-            <textarea
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
+              type="button"
+              onClick={handleClear}
               disabled={isProcessing || isRecording}
-              placeholder={t("textPlaceholder")}
-              rows={3}
-              className="flex-1 min-w-0 border-4 border-black px-3 py-2 bg-white text-black font-semibold text-sm rounded-none focus:outline-none focus:bg-gray-100 placeholder-gray-500 resize-none"
-            />
-            {inputText.trim() && (
-              <button
-                type="button"
-                onClick={handleClear}
-                disabled={isProcessing || isRecording}
-                className="border-4 border-black bg-white text-black px-3 py-2 font-bold transition-all select-none cursor-pointer active:translate-x-0.5 active:translate-y-0.5 hover:bg-black hover:text-white"
-              >
-                <X className="w-4 h-4 stroke-[2.5]" />
-              </button>
-            )}
-          </div>
-
-          {/* Elevated Confirm / Accept Button shown when text is captured */}
-          {inputText.trim() && !isRecording && (
-            <button
-              type="submit"
-              disabled={isProcessing}
-              className="w-full border-4 border-black bg-black text-white py-3.5 font-bold text-sm uppercase flex items-center justify-center gap-2 transition-all select-none cursor-pointer shadow-brutal active:translate-x-1 active:translate-y-1 active:shadow-none hover:bg-white hover:text-black"
+              className="border-4 border-black bg-white text-black px-3 py-2 font-bold transition-all select-none cursor-pointer active:translate-x-0.5 active:translate-y-0.5 hover:bg-black hover:text-white"
             >
-              <Check className="w-5 h-5 stroke-[3]" />
-              <span>
-                {language === "bn" ? "লেনদেন নিশ্চিত করুন" : "Accept Transaction"}
-              </span>
+              <X className="w-4 h-4 stroke-[2.5]" />
             </button>
           )}
-        </form>
+        </div>
+
+        {/* Elevated Confirm / Accept Button shown when text is captured */}
+        {inputText.trim() && !isRecording && (
+          <button
+            type="submit"
+            disabled={isProcessing}
+            className="w-full border-4 border-black bg-black text-white py-3.5 font-bold text-sm uppercase flex items-center justify-center gap-2 transition-all select-none cursor-pointer shadow-brutal active:translate-x-1 active:translate-y-1 active:shadow-none hover:bg-white hover:text-black"
+          >
+            <Check className="w-5 h-5 stroke-[3]" />
+            <span>
+              {language === "bn" ? "লেনদেন নিশ্চিত করুন" : "Accept Transaction"}
+            </span>
+          </button>
+        )}
+      </form>
+
+      {/* Helper Mic status banner */}
+      <div className="text-center mt-1">
+        <p className="text-xs font-bold uppercase tracking-wider text-black select-none">
+          {isRecording ? (
+            <span className="text-red-600 animate-pulse flex items-center justify-center gap-1.5">
+              ● শুনছি... কথা বলা শেষ হলে বোতামে আবার চাপুন
+            </span>
+          ) : (
+            t("speakHint")
+          )}
+        </p>
+      </div>
+
+      {/* Floating Action control row (MOVED TO BOTTOM) */}
+      <div className="flex items-center justify-center relative h-20 mb-2">
+        <div className="absolute flex items-center justify-center">
+          {/* Pulsing Ripple Rings when Recording */}
+          {isRecording && (
+            <>
+              <div className="absolute w-32 h-32 rounded-full border-4 border-black animate-ping opacity-25" />
+              <div className="absolute w-28 h-28 rounded-full border-4 border-black animate-ping opacity-45 delay-100" />
+            </>
+          )}
+
+          {/* Big Mic Button */}
+          <button
+            onClick={handleMicToggle}
+            disabled={isProcessing}
+            className={`z-10 rounded-full p-6 border-4 border-black transition-all active:scale-95 cursor-pointer shadow-brutal select-none ${
+              isRecording
+                ? "bg-white text-black hover:bg-black hover:text-white"
+                : "bg-black text-white hover:bg-white hover:text-black"
+            }`}
+          >
+            {isRecording ? (
+              <MicOff className="w-10 h-10 stroke-[2.5]" />
+            ) : (
+              <Mic className="w-10 h-10 stroke-[2.5]" />
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

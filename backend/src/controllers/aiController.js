@@ -169,12 +169,7 @@ Analyze this input: "${transcript}"
     }
 
     const normalizedName = normalizeName(customerName);
-    const allCustomers = await Customer.find();
-    let customer = allCustomers.find(c => 
-      c.normalizedName === normalizedName || 
-      c.normalizedName.includes(normalizedName) || 
-      normalizedName.includes(c.normalizedName)
-    );
+    let customer = await Customer.findOne({ normalizedName });
 
     // Handle new customer flows
     if (!customer) {
@@ -299,12 +294,7 @@ const saveExternalParsedData = async (req, res) => {
     const { customerName, phone, items, paymentType, paidAmount, rawTranscript } = parsedData;
 
     const normalizedName = normalizeName(customerName);
-    const allCustomers = await Customer.find();
-    let customer = allCustomers.find(c => 
-      c.normalizedName === normalizedName || 
-      c.normalizedName.includes(normalizedName) || 
-      normalizedName.includes(c.normalizedName)
-    );
+    let customer = await Customer.findOne({ normalizedName });
 
     // Handle new customer flows
     if (!customer) {
