@@ -394,11 +394,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         alert(t("addTxSuccess"));
       }
     } catch (err: any) {
-      if (err.message && err.message !== "Failed to fetch") {
-        alert("এআই প্রসেসিং এ সমস্যা হয়েছে: " + err.message);
-      } else {
-        console.warn("API Server down. Processing locally with offline fallback parser.", err);
-        const parsedData = parseLedgerTextLocal(transcript);
+      console.warn("API Server error or down. Processing locally with offline fallback parser.", err);
+      // Fallback to local parser
+      const parsedData = parseLedgerTextLocal(transcript);
 
         const customerTransactions = transactions.filter(
           (tx) => tx.customerName === parsedData.customerName
@@ -422,7 +420,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         addTransaction(parsedData);
         alert(t("addTxSuccess"));
-      }
     } finally {
       setIsProcessing(false);
     }
@@ -446,11 +443,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (data.requiresPhone) {
         const phone = prompt(
           language === "bn"
-            ? `কাস্টমার "${data.parsedData.customerName}" নতুন। অনুগ্রহ করে ফোন নম্বর দিন:`
-            : `Customer "${data.parsedData.customerName}" is new. Please enter phone number:`
+            ? `কাস্টমার "${data.parsedData.customerName}" নতুন। অনুগ্রহ করে ফোন নম্বর দিন (না থাকলে ফাঁকা রাখুন):`
+            : `Customer "${data.parsedData.customerName}" is new. Please enter phone number (leave blank if none):`
         );
-        if (phone) {
-          await saveExternalParsedTransaction({ ...parsedData, phone });
+        if (phone !== null) {
+          await saveExternalParsedTransaction({ ...parsedData, phone: phone || "NONE" });
         } else {
           setIsProcessing(false);
         }
