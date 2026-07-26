@@ -1,4 +1,4 @@
-﻿# KothaKhata
+# KothaKhata
 
 **Voice-first bookkeeping for local shop owners, powered by Gemma.**
 
@@ -67,7 +67,7 @@ Express backend
         ├─► Gemma (via Gemini API) ──► structured JSON
         │       { customer_name, phone?, items[], payment_status, amount_paid }
         │
-        ├─► NoSQL ──► match/create customer → create order → update ledger
+        ├─► MongoDB ──► match/create customer → create order → update ledger
         │
         └─► Response ──► bill summary + confirmation shown in browser
 ```
@@ -79,7 +79,7 @@ If transcription fails or is low-confidence, the frontend falls back to a plain 
 | Layer | Choice |
 |---|---|
 | Backend | Node.js + Express |
-| Database | NoSQL |
+| Database | NoSQL (MongoDB) |
 | AI Model | Gemma (via Gemini API) |
 | Speech-to-Text | Bangla ASR (transcription step ahead of Gemma prompt) |
 | Frontend | HTML/CSS/JS, mobile-first responsive |
@@ -89,36 +89,47 @@ If transcription fails or is low-confidence, the frontend falls back to a plain 
 
 ## Database Schema
 
-**customers**
-| Column | Type |
-|---|---|
-| id | PK |
-| name | text |
-| phone | text |
-| created_at | timestamp |
+MongoDB, two primary collections. Orders are embedded as a sub-array within each customer document, since orders are almost always read/written in the context of "this customer's ledger" — avoiding a join-like lookup for the most common access pattern (customer profile + their order history + running debt).
 
-**orders**
-| Column | Type |
-|---|---|
-| id | PK |
-| customer_id | FK → customers |
-| created_at | timestamp |
-| total_amount | number |
-| paid_amount | number |
-| status | `paid` \| `partial` \| `baki` |
+**`customers` collection**
+```json
+{
+  "_id": "ObjectId",
+  "name": "Kamal Hossain",
+  "phone": "01XXXXXXXXX",
+  "created_at": "ISODate",
+  "orders": [
+    {
+      "order_id": "uuid",
+      "created_at": "ISODate",
+      "items": [
+        { "product_name": "chal", "quantity": 2, "unit": "kg", "unit_price": 60, "line_total": 120 },
+        { "product_name": "tel", "quantity": 1, "unit": "litre", "unit_price": 180, "line_total": 180 }
+      ],
+      "total_amount": 300,
+      "paid_amount": 0,
+      "status": "baki"
+    }
+  ],
+  "total_baki": 300
+}
+```
 
-**order_items**
-| Column | Type |
-|---|---|
-| id | PK |
-| order_id | FK → orders |
-| product_name | text (free-text for MVP) |
-| quantity | number |
-| unit | text |
-| unit_price | number |
-| line_total | number |
+`total_baki` is maintained as a denormalized running field on the customer document (sum of unpaid/partial order balances), updated on every write, so the end-of-day summary and per-customer debt lookups don't require aggregating across all orders on every read.
 
-`products` as a first-class catalog table is a planned extension (see below) — MVP stores product names as free text on `order_items` to avoid a fragile matching step under time pressure.
+**`daily_summary` collection** *(optional, for fast end-of-day reads)*
+```json
+{
+  "_id": "2026-07-26",
+  "total_sales": 4500,
+  "total_collected": 3200,
+  "total_baki": 1300,
+  "top_debtors": [{ "customer_id": "...", "name": "Kamal Hossain", "baki": 300 }]
+}
+```
+Can alternatively be computed on-demand via an aggregation query if you don't want to maintain a second write path during the hackathon.
+
+A `products` catalog collection (name, unit, default_unit_price) is a planned extension — MVP stores product names as free text within each order's items array to avoid a fragile matching step under time pressure.
 
 ## Getting Started
 
@@ -126,9 +137,8 @@ If transcription fails or is low-confidence, the frontend falls back to a plain 
 git clone <repo-url>
 cd kothakhata
 npm install
-cp .env.example .env   # add your Gemini API key
-npm run init-db        # creates SQLite tables
-npm start
+cp .env.example .env   # add your Gemini API key + MongoDB connection URI
+npm start              # collections are created on first write; no migration step needed
 ```
 
 Open `http://localhost:3000` in a browser (or your phone, on the same network, for the mobile-sized experience).
@@ -148,12 +158,12 @@ Open `http://localhost:3000` in a browser (or your phone, on the same network, f
 - **SMS integration** — send bill/baki confirmations to customers without smartphones
 - **Baki alerts** — proactive reminders to shop owners (and optionally customers) about outstanding debt
 - **bKash payment capture** — detect and reconcile mobile financial service payments automatically against orders
-- **Formal product catalog** — structured `products` table with per-unit pricing, replacing free-text item entry
+- **Formal product catalog** — structured `products` collection with per-unit pricing, replacing free-text item entry
 
 ## Limitations
 
 - Speech-to-text accuracy for regional Bangla dialects and background noise (a real shop is noisy) hasn't been rigorously benchmarked yet
-- Customer matching by name is simple string matching in the MVP; ambiguity (common names) isn't yet handled
+- Customer matching by name uses a simple MongoDB text/regex match in the MVP; ambiguity (common names) isn't yet handled
 - No authentication/security layer — anyone with the link can currently use the app
 - Not yet tested with real shop owners in a live environment; validation so far is scripted demo scenarios
 
