@@ -6,6 +6,7 @@ const connectDB = require("./config/db");
 const customerRoutes = require("./routes/customerRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const summaryRoutes = require("./routes/summaryRoutes");
+const shopRoutes = require("./routes/shopRoutes");
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.use(express.json());
 app.use("/api/customers", customerRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/summary", summaryRoutes);
+app.use("/api/shop", shopRoutes);
 
 app.get("/", (req, res) => {
     res.json({ message: "KothaKhata API is running" });
