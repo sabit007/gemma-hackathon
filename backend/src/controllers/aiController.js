@@ -60,6 +60,17 @@ Output: {
   "paidAmount": 100
 }
 
+Input: "রহিম মিয়া ২ কেজি চাল কিনলো প্রতি কেজি চালের দাম ৭০ টাকা কিন্তু সে আমাকে দিয়েছে ৫০ টাকা"
+Output: {
+  "customerName": "রহিম মিয়া",
+  "phone": null,
+  "items": [
+    { "name": "চাল", "quantity": "২ কেজি", "unitPrice": 70 }
+  ],
+  "paymentType": "BAKI",
+  "paidAmount": 50
+}
+
 Input: "Kamal paid 150 taka"
 Output: {
   "customerName": "Kamal",
