@@ -126,7 +126,7 @@ Analyze this input: "${transcript}"
         "X-Title": "Shohoj Hisab",
       },
       body: JSON.stringify({
-        model: "google/gemma-4-26b-a4b-it:free",
+        model: "google/gemma-2-9b-it:free",
         messages: [
           {
             role: "user",
@@ -160,7 +160,13 @@ Analyze this input: "${transcript}"
       cleanText = cleanText.replace(/\n```$/, "");
     }
 
-    const parsedData = JSON.parse(cleanText.trim());
+    let parsedData;
+    try {
+      parsedData = JSON.parse(cleanText.trim());
+    } catch (parseError) {
+      console.error("Gemma JSON Parse Error:", parseError, "Raw Text:", cleanText);
+      return res.status(500).json({ message: "Failed to parse AI response into valid JSON." });
+    }
 
     const { customerName, phone, items, paymentType, paidAmount } = parsedData;
 

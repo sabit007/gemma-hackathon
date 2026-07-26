@@ -353,7 +353,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       });
 
       if (!response.ok) {
-        throw new Error("Backend response error");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Backend API Error");
       }
 
       const data = await response.json();
@@ -382,32 +383,36 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         await fetchTransactions();
         alert(t("addTxSuccess"));
       }
-    } catch (err) {
-      console.warn("API Server down. Processing locally with offline fallback parser.", err);
-      const parsedData = parseLedgerTextLocal(transcript);
+    } catch (err: any) {
+      if (err.message && err.message !== "Failed to fetch") {
+        alert("এআই প্রসেসিং এ সমস্যা হয়েছে: " + err.message);
+      } else {
+        console.warn("API Server down. Processing locally with offline fallback parser.", err);
+        const parsedData = parseLedgerTextLocal(transcript);
 
-      const customerTransactions = transactions.filter(
-        (tx) => tx.customerName === parsedData.customerName
-      );
-      const cumulativeDue = customerTransactions.reduce(
-        (sum, tx) => sum + (tx.totalAmount - tx.amountPaid),
-        0
-      );
-      const newBakiEffect = parsedData.status === "Due" ? (parsedData.totalAmount - parsedData.amountPaid) : 0;
-      const CREDIT_LIMIT = 1000;
-
-      if (parsedData.status === "Due" && cumulativeDue + newBakiEffect > CREDIT_LIMIT) {
-        alert(
-          language === "bn"
-            ? `বকেয়া সীমা অতিক্রম করেছে! কাস্টমার ${parsedData.customerName} এর মোট বকেয়া ${cumulativeDue + newBakiEffect} ৳ যা সীমা (${CREDIT_LIMIT} ৳) ছাড়িয়েছে। আর বাকি দেওয়া যাবে না।`
-            : `Credit Limit Exceeded! Total dues for ${parsedData.customerName} would be ${cumulativeDue + newBakiEffect} ৳ (Limit: ${CREDIT_LIMIT} ৳). Strictly no more credit.`
+        const customerTransactions = transactions.filter(
+          (tx) => tx.customerName === parsedData.customerName
         );
-        setIsProcessing(false);
-        return;
-      }
+        const cumulativeDue = customerTransactions.reduce(
+          (sum, tx) => sum + (tx.totalAmount - tx.amountPaid),
+          0
+        );
+        const newBakiEffect = parsedData.status === "Due" ? (parsedData.totalAmount - parsedData.amountPaid) : 0;
+        const CREDIT_LIMIT = 1000;
 
-      addTransaction(parsedData);
-      alert(t("addTxSuccess"));
+        if (parsedData.status === "Due" && cumulativeDue + newBakiEffect > CREDIT_LIMIT) {
+          alert(
+            language === "bn"
+              ? `বকেয়া সীমা অতিক্রম করেছে! কাস্টমার ${parsedData.customerName} এর মোট বকেয়া ${cumulativeDue + newBakiEffect} ৳ যা সীমা (${CREDIT_LIMIT} ৳) ছাড়িয়েছে। আর বাকি দেওয়া যাবে না।`
+              : `Credit Limit Exceeded! Total dues for ${parsedData.customerName} would be ${cumulativeDue + newBakiEffect} ৳ (Limit: ${CREDIT_LIMIT} ৳). Strictly no more credit.`
+          );
+          setIsProcessing(false);
+          return;
+        }
+
+        addTransaction(parsedData);
+        alert(t("addTxSuccess"));
+      }
     } finally {
       setIsProcessing(false);
     }
