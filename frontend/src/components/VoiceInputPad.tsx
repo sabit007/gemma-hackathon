@@ -226,7 +226,7 @@ export default function VoiceInputPad() {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t-4 border-black p-4 max-w-lg mx-auto shadow-[0_-8px_30px_rgba(0,0,0,0.12)] pt-12">
+    <div className="fixed bottom-4 left-0 right-0 w-[calc(100%-2rem)] max-w-lg mx-auto z-40 bg-white border-4 border-black p-4 shadow-brutal pt-12">
       <div className="flex flex-col gap-3">
         {/* Floating Action control row */}
         <div className="flex items-center justify-center relative h-10">
