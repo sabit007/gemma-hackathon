@@ -153,11 +153,11 @@ Analyze this input: "${transcript}"
 
     const responseText = responseData.choices[0].message.content;
 
-    // Clean and extract JSON string in case the model returns markdown code fences
+    // Robust JSON extraction
     let cleanText = responseText.trim();
-    if (cleanText.startsWith("```")) {
-      cleanText = cleanText.replace(/^```(json)?\n/, "");
-      cleanText = cleanText.replace(/\n```$/, "");
+    const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      cleanText = jsonMatch[0];
     }
 
     let parsedData;
@@ -195,10 +195,11 @@ Analyze this input: "${transcript}"
       }
 
       // Create new customer
+      const phoneToSave = finalPhone === "NONE" ? null : finalPhone;
       customer = await Customer.create({
         name: customerName,
         normalizedName,
-        phone: finalPhone,
+        phone: phoneToSave,
         outstandingBaki: 0
       });
     }

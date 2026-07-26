@@ -362,11 +362,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (data.requiresPhone) {
         const phone = prompt(
           language === "bn"
-            ? `কাস্টমার "${data.parsedData.customerName}" নতুন। অনুগ্রহ করে ফোন নম্বর দিন:`
-            : `Customer "${data.parsedData.customerName}" is new. Please enter phone number:`
+            ? `কাস্টমার "${data.parsedData.customerName}" নতুন। অনুগ্রহ করে ফোন নম্বর দিন (না থাকলে ফাঁকা রাখুন):`
+            : `Customer "${data.parsedData.customerName}" is new. Please enter phone number (leave blank if none):`
         );
-        if (phone) {
-          await parseAndAddTransaction(transcript, phone);
+        if (phone !== null) {
+          await parseAndAddTransaction(transcript, phone || "NONE");
         } else {
           setIsProcessing(false);
         }
