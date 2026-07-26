@@ -1,0 +1,52 @@
+# Python virtual environment
+backend/venv/
+venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# IDE / editor files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Audio files
+*.mp3
+*.wav
+*.m4a
+*.flac
+*.ogg
+*.aac
+
+# Uploaded/generated files
+uploads/
+output/
+temp/
+
+# Node / frontend dependencies (if we add React later)
+node_modules/
+dist/
+build/
+.next/
+
+# Coverage
+.coverage
+htmlcov/
+.pytest_cache/

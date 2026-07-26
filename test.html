@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Test Audio Upload</title>
+  </head>
+  <body>
+    <h2>Test Gemma Audio Endpoint</h2>
+    <input type="file" id="audioFile" accept="audio/*" />
+    <button onclick="upload()">Send to Server</button>
+    <pre id="result"></pre>
+
+    <script>
+      async function upload() {
+        const file = document.getElementById("audioFile").files[0];
+        if (!file) return alert("Please select an audio file");
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const res = await fetch("http://127.0.0.1:8000/process_audio", {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await res.json();
+        document.getElementById("result").innerText = JSON.stringify(
+          data,
+          null,
+          2
+        );
+      }
+    </script>
+  </body>
+</html>

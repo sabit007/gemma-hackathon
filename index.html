@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mudi Dokan Bookkeeper MVP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-zinc-950 text-white min-h-screen">
+    <div class="max-w-4xl mx-auto p-8">
+      <h1 class="text-3xl font-bold mb-2">Mudi Dokan Bookkeeper</h1>
+      <p class="text-zinc-400 mb-6">Gemma-powered Bangla order parsing MVP</p>
+
+      <div class="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 mb-6">
+        <label class="block text-sm text-zinc-400 mb-2">Backend URL</label>
+        <input
+          id="backendUrl"
+          type="text"
+          value="http://127.0.0.1:8000/process_text"
+          class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 mb-4"
+        />
+
+        <label class="block text-sm text-zinc-400 mb-2"
+          >Bangla Order Input</label
+        >
+        <textarea
+          id="orderInput"
+          rows="5"
+          class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 mb-4"
+          placeholder="Example: রহিমের কাছে ২ কেজি চাল ১৪০ টাকা, ১ লিটার তেল ১৮০ টাকা, বাকি রাখবে"
+        ></textarea>
+
+        <div class="flex gap-3 flex-wrap">
+          <button
+            onclick="sendToGemma()"
+            class="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 rounded-xl font-semibold"
+          >
+            Parse with Gemma
+          </button>
+
+          <button
+            onclick="fillExample1()"
+            class="px-4 py-3 bg-zinc-700 hover:bg-zinc-600 rounded-xl"
+          >
+            Example 1
+          </button>
+
+          <button
+            onclick="fillExample2()"
+            class="px-4 py-3 bg-zinc-700 hover:bg-zinc-600 rounded-xl"
+          >
+            Example 2
+          </button>
+
+          <button
+            onclick="clearAll()"
+            class="px-4 py-3 bg-red-700 hover:bg-red-600 rounded-xl"
+          >
+            Clear
+          </button>
+        </div>
+
+        <p id="status" class="text-sm text-zinc-400 mt-4">Ready</p>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-2xl p-6">
+          <h2 class="text-lg font-semibold mb-3">Gemma Raw Output</h2>
+          <pre
+            id="rawOutput"
+            class="text-sm whitespace-pre-wrap break-words text-zinc-200"
+          ></pre>
+        </div>
+
+        <div class="bg-zinc-900 border border-zinc-700 rounded-2xl p-6">
+          <h2 class="text-lg font-semibold mb-3">Parsed JSON</h2>
+          <pre
+            id="jsonOutput"
+            class="text-sm whitespace-pre-wrap break-words text-zinc-200"
+          ></pre>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function fillExample1() {
+        document.getElementById("orderInput").value =
+          "রহিমের কাছে ২ কেজি চাল ১৪০ টাকা, ১ লিটার তেল ১৮০ টাকা, বাকি রাখবে";
+      }
+
+      function fillExample2() {
+        document.getElementById("orderInput").value =
+          "করিম ৩টা সাবান ৪০ টাকা করে নিল, ১ কেজি ডাল ১২০ টাকা, ২০০ টাকা এখন দিবে";
+      }
+
+      function clearAll() {
+        document.getElementById("orderInput").value = "";
+        document.getElementById("rawOutput").textContent = "";
+        document.getElementById("jsonOutput").textContent = "";
+        document.getElementById("status").textContent = "Ready";
+      }
+
+      async function sendToGemma() {
+        const text = document.getElementById("orderInput").value.trim();
+        const url = document.getElementById("backendUrl").value.trim();
+        const rawOutput = document.getElementById("rawOutput");
+        const jsonOutput = document.getElementById("jsonOutput");
+        const status = document.getElementById("status");
+
+        if (!text) {
+          alert("Please enter a Bangla order first.");
+          return;
+        }
+
+        rawOutput.textContent = "";
+        jsonOutput.textContent = "";
+        status.textContent = "Sending to Gemma...";
+
+        try {
+          const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text }),
+          });
+
+          const data = await res.json();
+          const raw = data.raw || "";
+
+          rawOutput.textContent = raw;
+
+          try {
+            const parsed = JSON.parse(raw);
+            jsonOutput.textContent = JSON.stringify(parsed, null, 2);
+            status.textContent = "Parsed successfully.";
+          } catch (e) {
+            jsonOutput.textContent =
+              "Could not parse JSON automatically.\n\n" + raw;
+            status.textContent =
+              "Gemma responded, but output is not valid JSON.";
+          }
+        } catch (err) {
+          status.textContent = "Request failed.";
+          rawOutput.textContent = String(err);
+        }
+      }
+    </script>
+  </body>
+</html>
