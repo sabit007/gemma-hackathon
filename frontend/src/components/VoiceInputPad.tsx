@@ -15,6 +15,7 @@ export default function VoiceInputPad() {
     transactions,
     addTransaction,
     parseAndAddTransaction,
+    saveExternalParsedTransaction,
   } = useApp();
 
   const [inputText, setInputText] = useState("");
@@ -22,6 +23,7 @@ export default function VoiceInputPad() {
   const [speechRecognition, setSpeechRecognition] = useState<any>(null);
   const [recordedAudioBlob, setRecordedAudioBlob] = useState<Blob | null>(null);
   const [originalSpeechText, setOriginalSpeechText] = useState(""); // to check if edited
+  const [pendingExternalData, setPendingExternalData] = useState<any>(null);
 
   // Reference to keep track of the latest transcript text to avoid React stale closure in async handlers
   const inputTextRef = useRef("");
@@ -98,6 +100,9 @@ export default function VoiceInputPad() {
         
         // Turn off mic tracks
         stream.getTracks().forEach((track) => track.stop());
+
+        // Immediately upload to ngrok API to get the transcript BEFORE user confirms
+        fetchTranscriptFromAudio(audioBlob);
       };
 
       setMediaRecorder(recorder);
@@ -156,8 +161,8 @@ export default function VoiceInputPad() {
     }
   };
 
-  // Upload original audio blob to ngrok API
-  const uploadAudioAndProcess = async (blob: Blob) => {
+  // Upload original audio blob to ngrok API to just get transcript/parsed data
+  const fetchTranscriptFromAudio = async (blob: Blob) => {
     setIsProcessing(true);
     try {
       const formData = new FormData();
@@ -177,73 +182,17 @@ export default function VoiceInputPad() {
 
       const result = await response.json();
       console.log("External API Parse result:", result);
-
-      const customerName = result.customerName || result.customer_name || result.customer?.name || "অপরিচিত কাস্টমার";
-      const totalAmount = Number(result.totalAmount || result.total_amount || result.total || result.bill || 0);
-      const amountPaid = Number(result.amountPaid || result.amount_paid || result.paid || result.paidAmount || 0);
-      const status = (result.status === "Paid" || result.paymentType === "CASH" || amountPaid === totalAmount) ? "Paid" : "Due";
       
-      const rawItems = result.items || [];
-      const items = Array.isArray(rawItems) ? rawItems.map((it: any) => ({
-        name: it.name || it.item_name || "সদাই",
-        qty: it.quantity || it.qty || "১টি",
-        price: Number(it.price || it.unitPrice || it.unit_price || totalAmount)
-      })) : [{ name: "সদাই", qty: "১ স্লট", price: totalAmount }];
-
-      // Display the final transcribed text returned by the server if available
-      if (result.transcript || result.text) {
-        setInputText(result.transcript || result.text);
+      const transcript = result.transcript || result.text || result.rawTranscript;
+      if (transcript) {
+        setInputText(transcript);
+        setOriginalSpeechText(transcript);
       }
-
-      // Perform local credit checking
-      const customerTransactions = transactions.filter(
-        (tx) => tx.customerName === customerName
-      );
-      const cumulativeDue = customerTransactions.reduce(
-        (sum, tx) => sum + (tx.totalAmount - tx.amountPaid),
-        0
-      );
-      const newBakiEffect = status === "Due" ? (totalAmount - amountPaid) : 0;
-      const CREDIT_LIMIT = 1000;
-
-      if (status === "Due" && cumulativeDue + newBakiEffect > CREDIT_LIMIT) {
-        alert(
-          language === "bn"
-            ? `বকেয়া সীমা অতিক্রম করেছে! কাস্টমার ${customerName} এর মোট বকেয়া ${cumulativeDue + newBakiEffect} ৳ যা সীমা (${CREDIT_LIMIT} ৳) ছাড়িয়েছে। আর বাকি দেওয়া যাবে না।`
-            : `Credit Limit Exceeded! Total dues for ${customerName} would be ${cumulativeDue + newBakiEffect} ৳ (Limit: ${CREDIT_LIMIT} ৳). Strictly no more credit.`
-        );
-        setIsProcessing(false);
-        return;
-      }
-
-      addTransaction({
-        customerName,
-        phone: result.phone || result.customer?.phone || null,
-        date: language === "bn" ? "২৬ জুলাই, ২০২৬" : "26 July, 2026",
-        items,
-        totalAmount,
-        amountPaid,
-        status,
-        smsDraft: ""
-      });
-
-      alert(t("addTxSuccess"));
-      setInputText("");
-      setRecordedAudioBlob(null);
-
+      
+      setPendingExternalData(result);
     } catch (err) {
-      console.warn("External transcription server down. Submitting text transcript to backend instead.", err);
-      
-      // Fix React stale closure: use inputTextRef.current instead of inputText
-      const currentText = inputTextRef.current;
-      if (currentText.trim()) {
-        await parseAndAddTransaction(currentText);
-        setInputText("");
-        setRecordedAudioBlob(null);
-      } else {
-        alert("External API connection failed. Using simulated offline parser.");
-        handleMockMicStop();
-      }
+      console.warn("External transcription server failed.", err);
+      // Let the Web Speech API transcript remain if external API fails
     } finally {
       setIsProcessing(false);
     }
@@ -254,23 +203,26 @@ export default function VoiceInputPad() {
     e.preventDefault();
     if (!inputText.trim() || isProcessing) return;
 
-    // Check if we should process via direct audio upload (if audio blob is present and text was NOT modified)
-    if (recordedAudioBlob && inputText.trim() === originalSpeechText.trim()) {
-      await uploadAudioAndProcess(recordedAudioBlob);
+    // If external data is ready and the user hasn't edited the transcript, we use the external data
+    if (pendingExternalData && inputText.trim() === originalSpeechText.trim()) {
+      await saveExternalParsedTransaction(pendingExternalData);
     } else {
-      // Otherwise, parse the text directly (allows manual edits review!)
+      // Otherwise, parse the text directly via our backend (allows manual edits review)
       setIsProcessing(true);
       await parseAndAddTransaction(inputText);
-      setInputText("");
-      setRecordedAudioBlob(null);
       setIsProcessing(false);
     }
+
+    setInputText("");
+    setRecordedAudioBlob(null);
+    setPendingExternalData(null);
   };
 
   const handleClear = () => {
     setInputText("");
     setRecordedAudioBlob(null);
     setOriginalSpeechText("");
+    setPendingExternalData(null);
   };
 
   return (

@@ -158,7 +158,12 @@ Analyze this input: "${transcript}"
     }
 
     const normalizedName = normalizeName(customerName);
-    let customer = await Customer.findOne({ normalizedName });
+    const allCustomers = await Customer.find();
+    let customer = allCustomers.find(c => 
+      c.normalizedName === normalizedName || 
+      c.normalizedName.includes(normalizedName) || 
+      normalizedName.includes(c.normalizedName)
+    );
 
     // Handle new customer flows
     if (!customer) {
@@ -273,6 +278,124 @@ Analyze this input: "${transcript}"
   }
 };
 
+const saveExternalParsedData = async (req, res) => {
+  try {
+    const { parsedData, phone: bodyPhone } = req.body;
+    if (!parsedData || !parsedData.customerName) {
+      return res.status(400).json({ message: "Invalid parsed data provided" });
+    }
+
+    const { customerName, phone, items, paymentType, paidAmount, rawTranscript } = parsedData;
+
+    const normalizedName = normalizeName(customerName);
+    const allCustomers = await Customer.find();
+    let customer = allCustomers.find(c => 
+      c.normalizedName === normalizedName || 
+      c.normalizedName.includes(normalizedName) || 
+      normalizedName.includes(c.normalizedName)
+    );
+
+    // Handle new customer flows
+    if (!customer) {
+      const finalPhone = phone || bodyPhone;
+      if (!finalPhone) {
+        return res.json({
+          requiresPhone: true,
+          parsedData
+        });
+      }
+
+      customer = await Customer.create({
+        name: customerName,
+        normalizedName,
+        phone: finalPhone,
+        outstandingBaki: 0
+      });
+    }
+
+    const preparedItems = items.map((item) => {
+      const quantityStr = String(item.quantity || "1");
+      const quantityMatch = quantityStr.match(/\d+/);
+      const quantity = quantityMatch ? Number(quantityMatch[0]) : 1;
+      const unitPrice = Number(item.unitPrice || 0);
+
+      return {
+        name: item.name || "সদাই",
+        quantity,
+        unitPrice,
+        subtotal: quantity * unitPrice
+      };
+    });
+
+    const total = preparedItems.reduce((sum, item) => sum + item.subtotal, 0);
+    const finalPaidAmount = paymentType === "CASH" ? total : Number(paidAmount || 0);
+    const bakiAmount = total - finalPaidAmount;
+
+    const CREDIT_LIMIT = 1000;
+    if (bakiAmount > 0 && customer.outstandingBaki + bakiAmount > CREDIT_LIMIT) {
+      return res.json({
+        limitExceeded: true,
+        message: `বকেয়া সীমা অতিক্রম করেছে! কাস্টমার ${customer.name} এর মোট বকেয়া ${customer.outstandingBaki + bakiAmount} ৳ যা সীমা (${CREDIT_LIMIT} ৳) ছাড়িয়েছে। আর বাকি দেওয়া যাবে না। আগে বকেয়া পরিশোধ করতে হবে।`,
+        outstandingBaki: customer.outstandingBaki,
+        bakiAmount
+      });
+    }
+
+    const order = await Order.create({
+      customerId: customer._id,
+      items: preparedItems,
+      total,
+      paymentType,
+      paidAmount: finalPaidAmount,
+      bakiAmount,
+      rawTranscript: rawTranscript || "External Parse"
+    });
+
+    await LedgerEntry.create({
+      customerId: customer._id,
+      orderId: order._id,
+      type: "SALE",
+      amount: total,
+      note: rawTranscript || "External Parse"
+    });
+
+    if (bakiAmount > 0) {
+      customer.outstandingBaki += bakiAmount;
+      await customer.save();
+
+      await LedgerEntry.create({
+        customerId: customer._id,
+        orderId: order._id,
+        type: "BAKI_ADDED",
+        amount: bakiAmount,
+        note: "Baki added from external transaction"
+      });
+    } else if (total === 0 && finalPaidAmount > 0) {
+      customer.outstandingBaki = Math.max(0, customer.outstandingBaki - finalPaidAmount);
+      await customer.save();
+
+      await LedgerEntry.create({
+        customerId: customer._id,
+        orderId: order._id,
+        type: "BAKI_PAYMENT",
+        amount: finalPaidAmount,
+        note: "Repayment logged from external transaction"
+      });
+    }
+
+    res.status(201).json({
+      success: true,
+      message: "External voice order saved successfully",
+      customer,
+      order
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   parseVoiceInput,
+  saveExternalParsedData,
 };

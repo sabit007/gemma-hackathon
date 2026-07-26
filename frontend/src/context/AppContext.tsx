@@ -26,6 +26,7 @@ interface AppContextType {
   transactions: Transaction[];
   addTransaction: (tx: Omit<Transaction, "id">) => void;
   parseAndAddTransaction: (transcript: string, phoneInput?: string) => Promise<void>;
+  saveExternalParsedTransaction: (parsedData: any) => Promise<void>;
   isRecording: boolean;
   setIsRecording: (recording: boolean) => void;
   isProcessing: boolean;
@@ -412,6 +413,55 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  const saveExternalParsedTransaction = async (parsedData: any) => {
+    setIsProcessing(true);
+    try {
+      const response = await fetch("http://localhost:5000/api/orders/save-external", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ parsedData }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Backend response error");
+      }
+
+      const data = await response.json();
+
+      if (data.requiresPhone) {
+        const phone = prompt(
+          language === "bn"
+            ? `কাস্টমার "${data.parsedData.customerName}" নতুন। অনুগ্রহ করে ফোন নম্বর দিন:`
+            : `Customer "${data.parsedData.customerName}" is new. Please enter phone number:`
+        );
+        if (phone) {
+          await saveExternalParsedTransaction({ ...parsedData, phone });
+        } else {
+          setIsProcessing(false);
+        }
+        return;
+      }
+
+      if (data.limitExceeded) {
+        alert(data.message);
+        setIsProcessing(false);
+        return;
+      }
+
+      if (data.success) {
+        await fetchTransactions();
+        alert(t("addTxSuccess"));
+      }
+    } catch (err) {
+      console.warn("API Server down. Unable to save external data to backend.", err);
+      // Fallback: just add to local state
+      addTransaction(parsedData);
+      alert(t("addTxSuccess"));
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   useEffect(() => {
     fetchTransactions();
   }, [language]);
@@ -429,6 +479,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         transactions,
         addTransaction,
         parseAndAddTransaction,
+        saveExternalParsedTransaction,
         isRecording,
         setIsRecording,
         isProcessing,
