@@ -251,8 +251,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           amountPaid = 0;
         }
       } else if (parsedNumbers.length >= 2) {
-        totalAmount = parsedNumbers[0];
-        amountPaid = parsedNumbers[1];
+        if (parsedNumbers.length >= 3 && (text.includes("কেজি") || text.includes("দাম") || text.includes("kg") || text.includes("price"))) {
+          totalAmount = parsedNumbers[0] * parsedNumbers[1];
+          amountPaid = parsedNumbers[2];
+        } else {
+          totalAmount = parsedNumbers[0];
+          amountPaid = parsedNumbers[1];
+        }
         status = "Due";
       }
     } else {
@@ -275,8 +280,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           amountPaid = 0;
         }
       } else if (parsedNumbers.length >= 2) {
-        totalAmount = parsedNumbers[0];
-        amountPaid = parsedNumbers[1];
+        if (parsedNumbers.length >= 3 && (text.includes("কেজি") || text.includes("দাম") || text.includes("kg") || text.includes("price") || text.includes("per"))) {
+          totalAmount = parsedNumbers[0] * parsedNumbers[1];
+          amountPaid = parsedNumbers[2];
+        } else {
+          totalAmount = parsedNumbers[0];
+          amountPaid = parsedNumbers[1];
+        }
         status = "Due";
       }
     }

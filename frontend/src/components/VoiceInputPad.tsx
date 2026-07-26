@@ -203,10 +203,15 @@ export default function VoiceInputPad() {
     e.preventDefault();
     if (!inputText.trim() || isProcessing) return;
 
-    // ALWAYS parse the text directly via our backend (uses our updated Gemma prompt)
-    setIsProcessing(true);
-    await parseAndAddTransaction(inputText);
-    setIsProcessing(false);
+    // If external data is ready and the user hasn't edited the transcript, we use the external data
+    if (pendingExternalData && inputText.trim() === originalSpeechText.trim()) {
+      await saveExternalParsedTransaction(pendingExternalData);
+    } else {
+      // Otherwise, parse the text directly via our backend (allows manual edits review)
+      setIsProcessing(true);
+      await parseAndAddTransaction(inputText);
+      setIsProcessing(false);
+    }
 
     setInputText("");
     setRecordedAudioBlob(null);
