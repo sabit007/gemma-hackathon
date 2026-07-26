@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useApp } from "@/context/AppContext";
 import { Mic, MicOff, Check, X } from "lucide-react";
 
@@ -22,6 +22,12 @@ export default function VoiceInputPad() {
   const [speechRecognition, setSpeechRecognition] = useState<any>(null);
   const [recordedAudioBlob, setRecordedAudioBlob] = useState<Blob | null>(null);
   const [originalSpeechText, setOriginalSpeechText] = useState(""); // to check if edited
+
+  // Reference to keep track of the latest transcript text to avoid React stale closure in async handlers
+  const inputTextRef = useRef("");
+  useEffect(() => {
+    inputTextRef.current = inputText;
+  }, [inputText]);
 
   // Predefined voice prompts simulating transcription for fallback/mock
   const voicePromptsBn = [
@@ -127,7 +133,7 @@ export default function VoiceInputPad() {
       mediaRecorder.stop();
       setIsRecording(false);
     } else {
-      // Mock recording stop
+      // Fallback mock recording stop
       setIsRecording(false);
       handleMockMicStop();
     }
@@ -184,6 +190,11 @@ export default function VoiceInputPad() {
         price: Number(it.price || it.unitPrice || it.unit_price || totalAmount)
       })) : [{ name: "সদাই", qty: "১ স্লট", price: totalAmount }];
 
+      // Display the final transcribed text returned by the server if available
+      if (result.transcript || result.text) {
+        setInputText(result.transcript || result.text);
+      }
+
       // Perform local credit checking
       const customerTransactions = transactions.filter(
         (tx) => tx.customerName === customerName
@@ -222,10 +233,17 @@ export default function VoiceInputPad() {
 
     } catch (err) {
       console.warn("External transcription server down. Submitting text transcript to backend instead.", err);
-      // Fallback to text parsing
-      await parseAndAddTransaction(inputText);
-      setInputText("");
-      setRecordedAudioBlob(null);
+      
+      // Fix React stale closure: use inputTextRef.current instead of inputText
+      const currentText = inputTextRef.current;
+      if (currentText.trim()) {
+        await parseAndAddTransaction(currentText);
+        setInputText("");
+        setRecordedAudioBlob(null);
+      } else {
+        alert("External API connection failed. Using simulated offline parser.");
+        handleMockMicStop();
+      }
     } finally {
       setIsProcessing(false);
     }
