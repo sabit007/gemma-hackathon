@@ -58,7 +58,7 @@ The application:
 
 1. Records the voice input.
 2. Converts the audio into Bangla text.
-3. Sends the transcript to Gemma 4 E2B.
+3. Sends the transcript to Gemma via OpenRouter API.
 4. Extracts structured order information.
 5. Finds or creates the customer.
 6. Calculates the order total.
@@ -97,7 +97,7 @@ Transcript:
 
 ### Gemma-Powered Order Parsing
 
-Gemma 4 E2B converts the transcript into structured JSON.
+Gemma 4 (via OpenRouter) converts the transcript into structured JSON.
 
 Example:
 
@@ -269,7 +269,7 @@ Bill confirmation and daily summary
 ┌─────────────────────────────────────┐
 │             Frontend                │
 │                                     │
-│ HTML, CSS, JavaScript               │
+│ Next.js, React, Tailwind CSS        │
 │ Browser MediaRecorder API           │
 └─────────────────┬───────────────────┘
                   │
@@ -288,7 +288,7 @@ Bill confirmation and daily summary
             │                    ▼
             │              Bangla transcript
             │                    │
-            ├──────────────► Gemma 4 E2B
+            ├──────────────► OpenRouter (Gemma 4)
             │                    │
             │                    ▼
             │              Structured JSON
@@ -312,9 +312,9 @@ Bill confirmation and daily summary
 | Backend                   | Node.js + Express           |
 | Database                  | MongoDB                     |
 | ODM                       | Mongoose                    |
-| AI Model                  | Gemma 4 E2B, locally hosted |
+| AI Model                  | Gemma 4 via OpenRouter API  |
 | Speech-to-Text            | Bangla ASR                  |
-| Frontend                  | HTML, CSS, and JavaScript   |
+| Frontend                  | Next.js, React, Tailwind CSS, TypeScript |
 | Audio Capture             | Browser `MediaRecorder` API |
 | Development Database Tool | MongoDB Compass             |
 | Environment Configuration | `dotenv`                    |
@@ -723,6 +723,15 @@ npm install
 
 ---
 
+### Open the Frontend
+
+```bash
+cd frontend
+npm install
+```
+
+---
+
 ### Configure Environment Variables
 
 Create:
@@ -736,6 +745,7 @@ Add:
 ```env
 PORT=5000
 MONGODB_URI=mongodb://127.0.0.1:27017/kotha_khata
+OPENROUTER_API_KEY=your_openrouter_api_key
 ```
 
 Do not commit the `.env` file.
@@ -779,6 +789,23 @@ The API will be available at:
 
 ```text
 http://localhost:5000
+```
+
+---
+
+### Start the Frontend
+
+Development mode:
+
+```bash
+cd frontend
+npm run dev
+```
+
+The frontend will be available at:
+
+```text
+http://localhost:3000
 ```
 
 ---
@@ -912,7 +939,7 @@ The application displays or reads:
 
 * Browser audio recording
 * Bangla speech-to-text
-* Gemma 4 E2B structured parsing
+* Gemma 4 structured parsing (via OpenRouter)
 * Frontend confirmation flow
 * End-to-end voice-to-ledger integration
 
